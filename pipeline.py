@@ -6,7 +6,16 @@ from torch import Tensor, nn
 from dataclasses import dataclass
 from transformers import CLIPTextModel, CLIPTokenizer
 from diffusers import AutoencoderKL, UNet2DConditionModel, PNDMScheduler
+from optimum.quanto import freeze, qfloat8, qint4, qint8, quantize
+from diffusers import StableDiffusionLatentUpscalePipeline
 from diffusers import UniPCMultistepScheduler
+
+UNET_QTYPES = {
+    "fp8": qfloat8,
+    "int8": qint8,
+    "int4": qint4,
+    "none": None,
+}
 
 @dataclass
 class CustomDiffusionPipelineCfg:
@@ -16,6 +25,8 @@ class CustomDiffusionPipelineCfg:
   num_inference_steps: int
   guidance_scale: float
   stable_diff_version: str
+  quantize: bool
+  unet_qtype: str
 
 class CustomDiffusionPipeline(nn.Module):
   def __init__(self, cfg):
@@ -32,12 +43,22 @@ class CustomDiffusionPipeline(nn.Module):
     self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.stable_diff_version, subfolder="text_encoder", use_safetensors=True, torch_dtype=torch.float16)
     self.unet = UNet2DConditionModel.from_pretrained(self.cfg.stable_diff_version, subfolder="unet", use_safetensors=True, torch_dtype=torch.float16)
     self.scheduler = UniPCMultistepScheduler.from_pretrained(self.cfg.stable_diff_version, subfolder="scheduler", torch_dtype=torch.float16)
-  
+
+    # # # UpScaler
+    upscaler_model_id = "stabilityai/sd-x2-latent-upscaler"
+    self.upscaler = StableDiffusionLatentUpscalePipeline.from_pretrained(upscaler_model_id, torch_dtype=torch.float16)
+
+    # # # Applying Model Quantization
+    if self.cfg.quantize and self.cfg.unet_qtype:
+        quantize(self.unet, weights=UNET_QTYPES[self.cfg.unet_qtype])
+        quantize(self.upscaler.unet, weights=UNET_QTYPES[self.cfg.unet_qtype])
+
   def device_load(self):
     self.vae.to(self.device)
     self.text_encoder.to(self.device)
     self.unet.to(self.device)
-  
+    self.upscaler = self.upscaler.to(self.device)
+
   def init_random_noise(self, prompt):
     batch_size = len(prompt)
     generator = torch.Generator(device=self.device)  # Seed generator to create the initial latent noise
@@ -91,3 +112,9 @@ class CustomDiffusionPipeline(nn.Module):
     image = (image.permute(1, 2, 0) * 255).to(torch.uint8).cpu().numpy()
     image = Image.fromarray(image)
     return image
+  
+  @torch.no_grad()
+  def generate_up(self, prompt):
+    low_resolution_image = self.generate(prompt)
+    return self.upscaler(prompt=prompt, image=low_resolution_image, 
+                         num_inference_steps=20, guidance_scale=0).images[0]

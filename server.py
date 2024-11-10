@@ -66,7 +66,7 @@ class PyTritonServer:
             # TODO: interpret the request data
             prompt = np.char.decode(req_data.astype("bytes"), "utf-8").item()
             # TODO: implement model inference
-            image = self.pipeline.generate(prompt)
+            image = self.pipeline.generate_up(prompt)
             # TODO: transform the model output into a byte array 
             byte_image = encode_image(image)
             responses.append({"result": np.array([byte_image])})

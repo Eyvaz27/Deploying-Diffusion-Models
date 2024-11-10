@@ -1,6 +1,8 @@
-device: cpu
+device: cuda
 height: 512
 width: 512
 num_inference_steps: 12
 guidance_scale: 7.5
 stable_diff_version: "CompVis/stable-diffusion-v1-4"
+quantize: true
+unet_qtype: int4
