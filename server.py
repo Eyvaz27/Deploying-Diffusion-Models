@@ -11,7 +11,6 @@ from pytriton.triton import Triton, TritonConfig
 from pipeline import CustomDiffusionPipeline, CustomDiffusionPipelineCfg
 
 CONFIG_PATH="config.yaml"
-os.environ["WARMUP_MODEL"] = "0"
 
 def load_config():
     with open(CONFIG_PATH, 'r') as file:
@@ -36,7 +35,7 @@ class PyTritonServer:
         self.pipeline = CustomDiffusionPipeline(cfg)
 
         # NOTE: you can change the device to "cpu" if you don't have a GPU, otherwise you may perform any optimizations you may find necessary
-        self.device = torch.device(configs.device)
+        self.device = torch.device(configs["device"])
 
         if os.getenv("WARMUP_MODEL", False):
             self._warmup()
@@ -52,6 +51,8 @@ class PyTritonServer:
         # 1) as long as we are running models in inference mode we don't need any WARM-UP (of learning rate)
         # 2) if you imply that checkpoints should be uploaded first during initialization, that is a usual practice ->
         #   -> you wouldn't like to load checkpoints at every query right?
+        self.pipeline.init_pipeline()
+        self.pipeline.device_load()
 
     def _infer_fn(self, requests):
         """
@@ -61,8 +62,7 @@ class PyTritonServer:
         """
         responses = []
         for req in requests:
-            req_data = req.parameters
-            
+            req_data = req.data["requests"]
             # TODO: interpret the request data
             prompt = np.char.decode(req_data.astype("bytes"), "utf-8").item()
             # TODO: implement model inference

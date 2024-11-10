@@ -41,9 +41,10 @@ RUN python -m pip install --no-cache-dir -r /workspace/diffusion/requirements.tx
 COPY config.yaml /workspace/diffusion/config.yaml
 COPY pipeline.py /workspace/diffusion/pipeline.py
 COPY server.py /workspace/diffusion/server.py
+COPY client.py /workspace/diffusion/client.py
 
 # TODO: Run the server
-# EXPOSE 4321
+# EXPOSE 8000
 
 # WORKDIR /workspace/diffusion/
-# ENTRYPOINT ["python", "server.py"]
+# ENTRYPOINT ["python", "-m", "server"]
