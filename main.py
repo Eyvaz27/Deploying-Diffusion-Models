@@ -8,7 +8,7 @@ from PIL import Image
 
 from pytriton.model_config import ModelConfig, Tensor
 from pytriton.triton import Triton, TritonConfig
-
+from pipeline import CustomDiffusionPipeline, CustomDiffusionPipelineCfg
 
 class PyTritonServer:
 

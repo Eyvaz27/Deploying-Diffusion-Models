@@ -33,6 +33,9 @@ ENV CUDA_MODULE_LOADING LAZY
 ENV LOG_VERBOSE 0
 
 # TODO: Install the requirements file
+RUN cd /workspace && mkdir diffusion && cd /workspace
+COPY requirements.txt /workspace/diffusion/requirements.txt
+RUN python -m pip install --no-cache-dir -r /workspace/diffusion/requirements.txt
 
 # TODO: Copy the source code
 
