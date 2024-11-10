@@ -38,5 +38,12 @@ COPY requirements.txt /workspace/diffusion/requirements.txt
 RUN python -m pip install --no-cache-dir -r /workspace/diffusion/requirements.txt
 
 # TODO: Copy the source code
+COPY config.yaml /workspace/diffusion/config.yaml
+COPY pipeline.py /workspace/diffusion/pipeline.py
+COPY server.py /workspace/diffusion/server.py
 
 # TODO: Run the server
+# EXPOSE 4321
+
+# WORKDIR /workspace/diffusion/
+# ENTRYPOINT ["python", "server.py"]

@@ -1,11 +1,12 @@
 from PIL import Image
+import io
 import torch
+import base64
 from torch import Tensor, nn
 from dataclasses import dataclass
 from transformers import CLIPTextModel, CLIPTokenizer
 from diffusers import AutoencoderKL, UNet2DConditionModel, PNDMScheduler
 from diffusers import UniPCMultistepScheduler
-
 
 @dataclass
 class CustomDiffusionPipelineCfg:
@@ -26,11 +27,11 @@ class CustomDiffusionPipeline(nn.Module):
     self.device_load()
 
   def init_pipeline(self):
-    self.vae = AutoencoderKL.from_pretrained(self.cfg.stable_diff_version, subfolder="vae", use_safetensors=True)
-    self.tokenizer = CLIPTokenizer.from_pretrained(self.cfg.stable_diff_version, subfolder="tokenizer")
-    self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.stable_diff_version, subfolder="text_encoder", use_safetensors=True)
-    self.unet = UNet2DConditionModel.from_pretrained(self.cfg.stable_diff_version, subfolder="unet", use_safetensors=True)
-    self.scheduler = UniPCMultistepScheduler.from_pretrained(self.cfg.stable_diff_version, subfolder="scheduler")
+    self.vae = AutoencoderKL.from_pretrained(self.cfg.stable_diff_version, subfolder="vae", use_safetensors=True, torch_dtype=torch.float16)
+    self.tokenizer = CLIPTokenizer.from_pretrained(self.cfg.stable_diff_version, subfolder="tokenizer", torch_dtype=torch.float16)
+    self.text_encoder = CLIPTextModel.from_pretrained(self.cfg.stable_diff_version, subfolder="text_encoder", use_safetensors=True, torch_dtype=torch.float16)
+    self.unet = UNet2DConditionModel.from_pretrained(self.cfg.stable_diff_version, subfolder="unet", use_safetensors=True, torch_dtype=torch.float16)
+    self.scheduler = UniPCMultistepScheduler.from_pretrained(self.cfg.stable_diff_version, subfolder="scheduler", torch_dtype=torch.float16)
   
   def device_load(self):
     self.vae.to(self.device)
@@ -43,7 +44,7 @@ class CustomDiffusionPipeline(nn.Module):
     latents = torch.randn((batch_size, self.unet.config.in_channels, self.cfg.height // 8, 
                            self.cfg.width // 8), generator=generator, device=self.device)
     latents = latents * self.scheduler.init_noise_sigma
-    return latents
+    return latents.to(dtype=torch.float16)
 
   @torch.no_grad()
   def embed_text_prompt(self, prompt):
