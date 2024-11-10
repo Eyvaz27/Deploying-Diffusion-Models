@@ -1,6 +1,7 @@
 # Instructions
 **Please read the instructions carefully before starting the assignment.**
 
+
 At Cuebric, we often utilize small python projects, which we refer to as "functions", to perform inference on our models. These functions are then deployed on Triton servers to serve as endpoints for our applications. This repository contains a template for such a function, which you can use to create your own functions.
 
 We do not expect this assignment to take more than 2-3 hours. If you find yourself spending more time than that, please make a note of it in your submission. Please ensure that your code is well-documented and that you have provided appropriate logging for the server. Code quality is more important than the completion of the assignment.
@@ -70,3 +71,21 @@ These are optional steps that you may complete if you have time, all of which re
 
 # Submission
 **You may write any additional notes, explanations, instructions or comments pertaining to the assignment here.**
+
+Details on the solution:
+- I have used StableDiffusion for text-to-image generation and super-resolution
+- I have used Optimum-Quanto for model quantization
+- details of image generation procedure can be changed by modifying config.yaml
+- I have tried to deploy model via docker (was able to do it) but can't run the 
+- client.py from the same codespace, but it still can be used to query deployed container
+
+How to run the code:
+- docker build --force-rm -t diffuser -f Dockerfile .
+- docker run -it --rm diffuser
+- apt-get update && apt-get install tmux --yes && apt-get install vim --yes
+- tmux new-session -s deploy
+- ctrl-b shift-5
+- in one tab deploy server by running :
+    - cd /workspace/diffusion && python -m server
+- in the other tab, run client:
+    - cd /workspace/diffusion && python -m client
